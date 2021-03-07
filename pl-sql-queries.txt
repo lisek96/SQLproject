@@ -1,0 +1,98 @@
+Zapytania podstawowe:
+
+1. Wypisz wszystkie produkty
+2. Wypisz wszystkich pracowników zarabiających więcej niż 2000
+3. Wypisz wszystkich dostawców
+
+Zapytania zawierające złączenia:
+
+4. Wypisz tych klientów i ich adresy, którzy nie posiadają numeru mieszkania
+5. Wypisz nazwy dostawców i nazwy oferowanych przez nich produktów
+6. Wypisz id pracowników, którzy nie obsługiwali jeszcze żadnego zamówienia
+
+Zapytania grupujące:
+
+7. Wypisz nazwy tych dostawców, którzy oferują więcej niż 2 produkty 
+8. Wypisz nazwe produktu, który pojawił się jako składnik zamówienia najmniej razy
+9. Wypisz adresy, pod którymi mieszkają przynajmniej 2 osoby
+
+Zapytania Skorelowane:
+
+10. Wypisz id_typu_produktu i średnią cenę produktu dla typu produktu, który posiada najwyższą średnią cene produktu
+11. Wypisz 3 najlepiej zarabiających pracowników
+12. Wypisz 2 najpóźniej zatrudnionych pracowników
+
+--1
+SELECT *
+FROM Produkt;
+
+--2
+SELECT *
+FROM Pracownik
+WHERE pensja > 2000;
+--3
+SELECT *
+FROM Dostawca;
+
+--4
+SELECT *
+FROM Klient
+NATURAL JOIN Adres
+WHERE numer_mieszkania IS NULL;
+
+--5
+SELECT dostawca.nazwa, produkt.nazwa
+FROM ProduktDostawca pd
+INNER JOIN Produkt on produkt.id_produkt = pd.id_produkt
+INNER JOIN Dostawca on dostawca.id_dostawcy = pd.id_dostawcy
+ORDER BY dostawca.nazwa;
+
+--6
+SELECT pracownik.id_pracownik
+FROM Pracownik
+LEFT OUTER JOIN Zamowienie on Pracownik.id_pracownik = Zamowienie.id_pracownik
+WHERE id_zamowienia IS NULL;
+
+--7
+SELECT nazwa, COUNT(*)
+FROM ProduktDostawca
+NATURAL JOIN Dostawca
+GROUP BY nazwa
+HAVING COUNT(*) > 2;
+
+--8
+SELECT nazwa, COUNT(*)
+FROM Skladnik_zamowienia
+NATURAL JOIN produkt
+GROUP BY nazwa
+HAVING COUNT(*) = (SELECT MIN(COUNT(*)) FROM Skladnik_zamowienia GROUP BY id_produkt);
+
+--9
+SELECT id_adres, miasto, ulica, numer_budynku, numer_mieszkania, COUNT(*) "Liczba Mieszkańców"
+FROM adres
+NATURAL JOIN klient
+GROUP BY id_adres, miasto, ulica, numer_budynku, numer_mieszkania
+HAVING COUNT(*) >= 2;
+
+--10
+SELECT typ_produktu.id_typ_produktu, AVG(Cena)
+FROM typ_produktu
+INNER JOIN produkt on produkt.id_typ_produktu = typ_produktu.id_typ_produktu
+GROUP BY typ_produktu.id_typ_produktu
+HAVING AVG(CENA) = (SELECT MAX(AVG(Cena)) 
+                    FROM typ_produktu 
+                    INNER JOIN produkt on produkt.id_typ_produktu = typ_produktu.id_typ_produktu 
+                    GROUP BY typ_produktu.id_typ_produktu);
+
+--11
+SELECT p.id_pracownik, p.pensja, p.data_zatrudnienia
+FROM Pracownik p
+WHERE 3 > (SELECT COUNT(*) FROM pracownik p1 WHERE p1.pensja > p.pensja)
+ORDER BY p.pensja DESC;
+
+--12
+SELECT p.id_pracownik, p.pensja, p.data_zatrudnienia
+FROM Pracownik p
+WHERE 2 > (SELECT COUNT(*) FROM pracownik p1 where p1.data_zatrudnienia > p.data_zatrudnienia);
+
+
